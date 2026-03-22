@@ -18,9 +18,6 @@ This sensor is commonly found in `PM01_A002` WiFi Dual Channel Smart Meter.
 ![HLW8112 board with CBU](images/hlw8112cbu.jpg)
 ![HLW8112 board with ESP32-C3](images/hlw8112esp32.jpg)
 
-<Image src={hlw8112Img} layout="constrained" alt="HLW8112 board" />
-<Image src={hlw8112esp32} layout="constrained" alt="HLW8112 board with ESP32-C3" />
-
 ## HLW811x library
 
 This component uses [MahdaSystem/HLW811x Library](https://github.com/MahdaSystem/HLW811x) from [Hossein-M98](https://github.com/Hossein-M98).
