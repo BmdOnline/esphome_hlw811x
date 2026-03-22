@@ -1,0 +1,17 @@
+# const.py
+CONF_LOG_REGISTERS = "log_registers"
+CONF_LOG_SETTINGS  = "log_settings"
+CONF_CH_A          = "_a"
+CONF_CH_B          = "_b"
+CONF_SWAP_AB       = "swap_AB"
+CONF_CHANNEL_SEL   = "channel_sel"
+CONF_RES_RATIO_IA  = "res_ratio_IA"
+CONF_RES_RATIO_IB  = "res_ratio_IB"
+CONF_RES_RATIO_U   = "res_ratio_U"
+
+ICON_ANGLE     = "mdi:angle-acute"
+ICON_POWER     = "mdi:flash"
+ICON_ENERGY    = "mdi:lightning-bolt"
+ICON_FREQUENCY = "mdi:cosine-wave"
+ICON_VOLTAGE   = "mdi:sine-wave"
+ICON_SETTINGS  = "mdi:cogs"
