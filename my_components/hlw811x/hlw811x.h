@@ -23,8 +23,6 @@
   #include "HLW811x_platform_bk72xx.h"
 #endif
 
-#include <cinttypes>
-
 namespace esphome::hlw811x {
 
 struct DataPacket {
@@ -134,6 +132,6 @@ template<typename... Ts> class ResetEnergyAction : public Action<Ts...>, public 
   void play(const Ts &...x) override { this->parent_->reset_energy_(this->channel_.value(x...)); }
 };
 
-}  // namespace esphome::hlw8012
+}  // namespace esphome::hlw811x
 
 #endif

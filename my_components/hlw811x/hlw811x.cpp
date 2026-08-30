@@ -139,9 +139,9 @@ void HLW811xComponent::init_hlw811x_()
     ESP_LOGW(TAG, "HLW811x_SetPowerFactorFunctionality => HLW811X_FAIL");
   }
 
-  result = HLW811x_SetCHS_IB(handler, HLW811X_ENDIS_ENABLE);
+  result = HLW811x_ChannelBMeasurement(handler, HLW811X_CHANNEL_B_MEASUREMENT_IB );
   if (result==HLW811X_FAIL) {
-    ESP_LOGW(TAG, "HLW811x_SetCHS_IB => HLW811X_FAIL");
+    ESP_LOGW(TAG, "HLW811x_ChannelBMeasurement => HLW811X_FAIL");
   }
 
   result = HLW811x_SetDataUpdateFreq(handler, HLW811X_DATA_UPDATE_FREQ_3_4HZ);
@@ -319,7 +319,7 @@ void HLW811xComponent::dump_config() {
   LOG_SENSOR("  ", "Phase angle", this->phase_angle_sensor_);
   LOG_SENSOR("  ", "Apparent power", this->apparent_power_sensor_);
   LOG_SENSOR("  ", "Current A", this->current_a_sensor_);
-  LOG_SENSOR("  ", "Current B", this->current_a_sensor_);
+  LOG_SENSOR("  ", "Current B", this->current_b_sensor_);
   LOG_SENSOR("  ", "Active Power A", this->active_power_a_sensor_);
   LOG_SENSOR("  ", "Active Power B", this->active_power_b_sensor_);
   LOG_SENSOR("  ", "Energy A", this->energy_a_sensor_);
@@ -374,18 +374,18 @@ void HLW811xComponent::update() {
 
     if (log_registers_text_sensor_ != nullptr) {
       char json_registers[256];
-      sprintf(json_registers,
-        "{\"RmsIAC\":%d,"
-        "\"RmsIBC\":%d,"
-        "\"RmsUC\":%d,"
-        "\"PowerPAC\":%d,"
-        "\"PowerPBC\":%d,"
-        "\"PowerSC\":%d,"
-        "\"EnergyAC\":%d,"
-        "\"EnergyBC\":%d,"
-        "\"SYSCON\":%d,"
-        "\"EMUCON\":%d,"
-        "\"EMUCON2\":%d}",
+      snprintf(json_registers, sizeof (json_registers),
+        "{\"RmsIAC\":%u,"
+        "\"RmsIBC\":%u,"
+        "\"RmsUC\":%u,"
+        "\"PowerPAC\":%u,"
+        "\"PowerPBC\":%u,"
+        "\"PowerSC\":%u,"
+        "\"EnergyAC\":%u,"
+        "\"EnergyBC\":%u,"
+        "\"SYSCON\":%u,"
+        "\"EMUCON\":%u,"
+        "\"EMUCON2\":%u}",
         handler->CoefReg.RmsIAC,
         handler->CoefReg.RmsIBC,
         handler->CoefReg.RmsUC,
@@ -403,7 +403,7 @@ void HLW811xComponent::update() {
 
     if (log_settings_text_sensor_ != nullptr) {
       char json_settings[256];
-      sprintf(json_settings,
+      snprintf(json_settings, sizeof (json_settings),
         "{\"HFconst\":%d,"
         "\"PGA.IA\":%d,"
         "\"PGA.IB\":%d,"
@@ -441,14 +441,14 @@ void HLW811xComponent::display_status_() {
     ///////////////////////////////////////////////
     /// HLW811x Calibration coefficients
     ///////////////////////////////////////////////
-    ESP_LOGD(TAG, "RmsIAC      : %d", handler->CoefReg.RmsIAC);
-    ESP_LOGD(TAG, "RmsIBC      : %d", handler->CoefReg.RmsIBC);
-    ESP_LOGD(TAG, "RmsUC       : %d", handler->CoefReg.RmsUC);
-    ESP_LOGD(TAG, "PowerPAC    : %d", handler->CoefReg.PowerPAC);
-    ESP_LOGD(TAG, "PowerPBC    : %d", handler->CoefReg.PowerPBC);
-    ESP_LOGD(TAG, "PowerSC     : %d", handler->CoefReg.PowerSC);
-    ESP_LOGD(TAG, "EnergyAC    : %d", handler->CoefReg.EnergyAC);
-    ESP_LOGD(TAG, "EnergyBC    : %d", handler->CoefReg.EnergyBC);
+    ESP_LOGD(TAG, "RmsIAC      : %u", handler->CoefReg.RmsIAC);
+    ESP_LOGD(TAG, "RmsIBC      : %u", handler->CoefReg.RmsIBC);
+    ESP_LOGD(TAG, "RmsUC       : %u", handler->CoefReg.RmsUC);
+    ESP_LOGD(TAG, "PowerPAC    : %u", handler->CoefReg.PowerPAC);
+    ESP_LOGD(TAG, "PowerPBC    : %u", handler->CoefReg.PowerPBC);
+    ESP_LOGD(TAG, "PowerSC     : %u", handler->CoefReg.PowerSC);
+    ESP_LOGD(TAG, "EnergyAC    : %u", handler->CoefReg.EnergyAC);
+    ESP_LOGD(TAG, "EnergyBC    : %u", handler->CoefReg.EnergyBC);
 
     ///////////////////////////////////////////////
     /// Read Register
