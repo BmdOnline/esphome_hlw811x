@@ -93,6 +93,17 @@ typedef enum HLW811x_CurrentChannel_e
   HLW811X_CURRENT_CHANNEL_B = 1
 } HLW811x_CurrentChannel_t;
 
+
+/**
+ * @brief  Channel B Measurement
+ */
+typedef enum HLW811x_ChannelBMeasurement_e
+{
+  HLW811X_CHANNEL_B_MEASUREMENT_TEMPERATURE = 0,
+  HLW811X_CHANNEL_B_MEASUREMENT_IB = 1
+} HLW811x_ChannelBMeasurement_t;
+
+
 /**
  * @brief  PGA gain
  */
@@ -616,6 +627,18 @@ HLW811x_SetChannelOnOff(HLW811x_Handler_t *Handler,
 
 
 /**
+ * @brief  Set Measurement type of channel B
+ * @param  Handler: Pointer to handler
+ * @param  Measurement: Measurement type
+ * @retval HLW811x_Result_t
+ *         - HLW811X_OK: Operation was successful.
+ *         - HLW811X_FAIL: Failed to send or receive data.
+ */                  
+HLW811x_Result_t
+HLW811x_ChannelBMeasurement(HLW811x_Handler_t *Handler, HLW811x_ChannelBMeasurement_t Measurement);
+
+
+/**
  * @brief  Set the PGA gain
  * @param  Handler: Pointer to handler
  * @param  U: PGA gain for voltage channel
@@ -748,20 +771,6 @@ HLW811x_SetEnergyClearance(HLW811x_Handler_t *Handler,
 HLW811x_Result_t
 HLW811x_SetDataUpdateFreq(HLW811x_Handler_t *Handler,
                           HLW811x_DataUpdateFreq_t Freq);
-
-
-/**
- * @brief  Set Current Channel B Measurement Selection Signal
- * @param  Handler: Pointer to handler
- * @param  Enable: Measure IB channel current
- * @retval HLW811x_Result_t
- *         - HLW811X_OK: Operation was successful.
- *         - HLW811X_FAIL: Failed to send or receive data.
- *         - HLW811X_INVALID_PARAM: One of parameters is invalid.
- */
-HLW811x_Result_t
-HLW811x_SetCHS_IB(HLW811x_Handler_t *Handler,
-                        HLW811x_EnDis_t Enable);
 
 
 /**
