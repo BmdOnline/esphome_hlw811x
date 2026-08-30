@@ -10,12 +10,21 @@ This sensor is commonly found in `PM01_A002` WiFi Dual Channel Smart Meter.
 
 ## Hardware limitation
 
-> [!IMPORTANT]
+> [!TIP]
 > `PM01_A002` sensor uses HLW8112 in SPI mode and Beken CBU (`BK7231N` module).
 > Unfortunately ESPHome doesn't support SPI support for Beken SoC.
-> You have to replace CBU, for example with [ESP32-C3 Tuya CBU Replacement Module](https://templates.blakadder.com/ESP8685-WROOM-06.html).
+>
+> In earlier versions, it was necessary to replace CBU, for example with [ESP32-C3 Tuya CBU Replacement Module](https://templates.blakadder.com/ESP8685-WROOM-06.html).
+>
+> In the new version, SPI mode is simulated on the CBU processor using [bit-banging method](https://en.wikipedia.org/wiki/Bit_banging).
+> It is therefore no longer necessary to replace the CBU with an ESP32 equivalent.
+
+## HLW8112 board with CBU
 
 ![HLW8112 board with CBU](images/hlw8112cbu.jpg)
+
+## HLW8112 board with ESP32-C3
+
 ![HLW8112 board with ESP32-C3](images/hlw8112esp32.jpg)
 
 ## HLW811x library
@@ -253,7 +262,296 @@ output:
     pin: GPIO5
 ```
 
-## Full Example Config
+## Full Example Config for CBU (Beken BK7231N)
+
+```yaml
+substitutions:
+  device_name: "smart-meter"
+  friendly_name: "Smart Meter"
+
+  # Swap A / B channels
+  swap_AB: "true"
+
+  # Select current channel for
+  # phase angle, apparent power, power factor,
+  # instantaneous active power and instantaneous apparent power
+  channel_sel: "A"
+
+  # Set ratio of resistors IA, IB & U
+  res_ratio_IA: 0.2
+  res_ratio_IB: 0.2
+  res_ratio_U: 1.0
+
+  board: cbu
+  BTN_PIN: P26
+  LED_PIN: P24
+  CS_PIN: P9
+  CLK_PIN: P14
+  MISO_PIN: P17  # MISO = SDI
+  MOSI_PIN: P16  # MOSI = SDO
+
+esphome:
+  name: $device_name
+  name_add_mac_suffix: true
+  friendly_name: $friendly_name
+  platformio_options:
+    build_flags:
+      - -std=c++11
+
+bk72xx:
+  board: ${board}
+  framework:
+    version: dev
+    #version: latest
+    options: # https://docs.libretiny.eu/docs/dev/config/#libretiny-options
+      LT_AUTO_DOWNLOAD_REBOOT: 1 # https://docs.libretiny.eu/docs/flashing/tools/adr/
+
+external_components:
+  - source:
+      type: local
+      path: my_components
+    components: [ hlw811x ]
+    refresh: 0s
+
+# Enable logging
+logger:
+  #level: DEBUG  # or VERY_VERBOSE for maximum detail
+
+# Enable Home Assistant API
+api:
+  # Enable Home Assistant API
+  homeassistant_services: true
+  #password: ""
+  #encryption:
+  #  key: !secret api_encryption_key
+
+  actions:
+    - action: set_channel_sel_a
+      then:
+        - hlw811x.set_channel_sel:
+            id: hlw811x_sensor
+            channel: "A"
+    - action: set_channel_sel_b
+      then:
+        - hlw811x.set_channel_sel:
+            id: hlw811x_sensor
+            channel: "B"
+    - action: reset_energy_a
+      then:
+        - hlw811x.reset_energy:
+            id: hlw811x_sensor
+            channel: "A"
+    - action: reset_energy_b
+      then:
+        - hlw811x.reset_energy:
+            id: hlw811x_sensor
+            channel: "B"
+
+ota:
+  - platform: esphome
+    password: ""
+wifi:
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "ESPHome Fallback"
+    password: ""
+
+captive_portal:
+
+web_server:
+  port: 80
+  version: 3
+
+binary_sensor:
+  - platform: gpio
+    id: sensor_btn
+    name: "Sensor Button"
+    pin:
+      number: ${BTN_PIN}
+      inverted: true
+      mode:
+        input: true
+        pullup: true
+    filters:
+      - delayed_on: 10ms
+    on_press:
+      then:
+        switch.toggle: switch_led
+switch:
+  - platform: output
+    id: switch_led
+    name: "Toggle Led"
+    output: sensor_led
+output:
+  - platform: gpio
+    id: sensor_led
+    pin: ${LED_PIN}
+
+button:
+#device resset button
+  - platform: factory_reset
+    name: Restart with Factory Default Settings
+    id: reset_sw_id
+#device restart button
+  - platform: restart
+    name: Restart SW
+    id: restart_sw_id
+
+  - platform: template
+    name: "HLW8112 Switch to Channel A"
+    on_press:
+      - hlw811x.set_channel_sel:
+          id: hlw811x_sensor
+          channel: "A"
+
+  - platform: template
+    name: "HLW8112 Switch to Channel B"
+    on_press:
+      - hlw811x.set_channel_sel:
+          id: hlw811x_sensor
+          channel: "B"
+
+  - platform: template
+    name: "HLW8112 Reset Energy A"
+    on_press:
+      - hlw811x.reset_energy:
+          id: hlw811x_sensor
+          channel: "A"
+
+  - platform: template
+    name: "HLW8112 Reset Energy B"
+    on_press:
+      - hlw811x.reset_energy:
+          id: hlw811x_sensor
+          channel: "B"
+
+  - platform: template
+    name: HLW8112 Publish
+    on_press:
+      - hlw811x.publish:
+          id: hlw811x_sensor
+
+  - platform: template
+    name: HLW8112 Status
+    on_press:
+      - hlw811x.display_status:
+          id: hlw811x_sensor
+
+sensor:
+  - platform: hlw811x
+    id: hlw811x_sensor
+    update_interval: 60s
+
+    # SPI
+    cs_pin: ${CS_PIN}
+    clk_pin: ${CLK_PIN}
+    mosi_pin: ${MOSI_PIN}
+    miso_pin: ${MISO_PIN}
+
+    # Swap A / B channels
+    swap_AB: true
+
+    # Select current channel for
+    #   phase angle, apparent power, power factor,
+    #   instantaneous active power and instantaneous apparent power
+    channel_sel: ${channel_sel}
+
+    # Set ratio of resistors IA, IB & U
+    res_ratio_IA: ${res_ratio_IA}
+    res_ratio_IB: ${res_ratio_IB}
+    res_ratio_U: ${res_ratio_U}
+
+    # Sensor values
+    voltage:
+      name: "HLW8112 Voltage"
+    frequency:
+      name: "HLW8112 Frequency"
+    power_factor:
+      name: "HLW8112 Power Factor"
+    phase_angle:
+      name: "HLW8112 Phase Angle"
+    apparent_power:
+      name: "HLW8112 Apparent Power"
+    current_a:
+      name: "HLW8112 Current A"
+    current_b:
+      name: "HLW8112 Current B"
+    active_power_a:
+      name: "HLW8112 Active Power A"
+      id: hlw8112_power_a
+    active_power_b:
+      name: "HLW8112 Active Power B"
+      id: hlw8112_power_b
+    energy_a:
+      name: "HLW8112 Energy A"
+    energy_b:
+      name: "HLW8112 Energy B"
+    log_registers:
+      name: "HLW8112 Registers"
+    log_settings:
+      name: "HLW8112 Settings"
+  - platform: total_daily_energy
+    name: "HLW8112 Energy A Daily"
+    power_id: hlw8112_power_a
+  - platform: total_daily_energy
+    name: "HLW8112 Energy B Daily"
+    power_id: hlw8112_power_b
+
+#Sensor showing Wifi signal strength
+  - platform: wifi_signal
+    name: Signal
+    update_interval: 60s
+
+#device uptime after booting
+  - platform: uptime
+    name: Uptime Sensor
+
+text_sensor:
+#firmware version
+  - platform: version
+    name: ESPHome Version
+
+#device hardware (what it is based on), hidden by the button
+  - platform: template
+    name: Hardware
+    entity_category: diagnostic
+    id: hardware
+    icon: 'mdi:saw-blade'
+    lambda: |-
+      char buffer[80];
+      sprintf(buffer, "%s", "${board}");
+      return {buffer};
+  - platform: wifi_info
+    ssid:
+      name: Connected SSID
+    bssid:
+      name: Connected BSSID
+#free memory
+  - platform: template
+    name: Free Mem Size
+    entity_category: diagnostic
+    lambda: |-
+      #ifdef USE_ARDUINO
+        #ifdef ESP32
+           size_t freeValue = heap_caps_get_free_size(MALLOC_CAP_DEFAULT);
+        #else
+           size_t freeValue = ESP.getFreeHeap();
+        #endif
+      #else
+        size_t freeValue = static_cast<float>(esp_get_free_heap_size());
+      #endif
+      char buffer[10];
+      if(freeValue>=1024) sprintf(buffer,"%uKb", freeValue/1024);
+      else sprintf(buffer,"%ub", freeValue);
+      return {buffer};
+
+# Enable time component to reset energy at midnight
+time:
+  - platform: sntp
+    id: sntp_time
+```
+
+## Full Example Config for ESP32
 
 ```yaml
 substitutions:
@@ -470,8 +768,10 @@ sensor:
       name: "HLW8112 Current B"
     active_power_a:
       name: "HLW8112 Active Power A"
+      id: hlw8112_power_a
     active_power_b:
       name: "HLW8112 Active Power B"
+      id: hlw8112_power_b
     energy_a:
       name: "HLW8112 Energy A"
     energy_b:
@@ -480,6 +780,12 @@ sensor:
       name: "HLW8112 Registers"
     log_settings:
       name: "HLW8112 Settings"
+  - platform: total_daily_energy
+    name: "HLW8112 Energy A Daily"
+    power_id: hlw8112_power_a
+  - platform: total_daily_energy
+    name: "HLW8112 Energy B Daily"
+    power_id: hlw8112_power_b
 
   #Sensor showing Wifi signal strength
   - platform: wifi_signal
