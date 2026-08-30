@@ -29,13 +29,6 @@
  */
 
 #ifdef USE_ESP32
-/*
-
-// .esphome/platformio/packages/framework-beken-bdk/beken378/driver/include/spi_pub.h
-// .esphome/platformio/packages/framework-beken-bdk/beken378/driver/spi
-
-*/
-
 
 /* Includes ---------------------------------------------------------------------*/
 #include "HLW811x_platform_esp32.h"
@@ -46,7 +39,6 @@ extern "C" {
 
 #include "freertos/FreeRTOS.h"
 
-#include "rom/ets_sys.h"
 #include "driver/gpio.h"
 
 
@@ -66,31 +58,6 @@ extern "C" {
 /* Private Variables ------------------------------------------------------------*/
 #if (HLW811X_CONFIG_SUPPORT_SPI)
 static spi_device_handle_t spi_device_handle = {0};
-#endif
-
-#if (HLW811X_CONFIG_SUPPORT_UART)
-static const uint16_t BaudRateTable[] =
-{
-  9600, 19200, 38400
-};
-#endif
-
-
-
-/**
- ==================================================================================
-                           ##### Private Functions #####
- ==================================================================================
- */
-
-static int8_t
-HLW811x_Platform_DelayMs(uint8_t Delay)
-{
-  vTaskDelay(Delay / portTICK_PERIOD_MS);
-  return 0;
-}
-
-#if (HLW811X_CONFIG_SUPPORT_SPI)
 
 typedef struct SPIconfig_s {
   int mosi_io_num;
@@ -111,8 +78,30 @@ void HLW811x_SPIconfig(int mosi_io_num, int miso_io_num, int sclk_io_num, int sc
   SPIconfig.miso_io_num = miso_io_num;
   SPIconfig.sclk_io_num = sclk_io_num;
   SPIconfig.scsn_io_num = scsn_io_num;
-};
+}
+#endif
 
+#if (HLW811X_CONFIG_SUPPORT_UART)
+static const uint16_t BaudRateTable[] =
+{
+  9600, 19200, 38400
+};
+#endif
+
+/**
+ ==================================================================================
+                           ##### Private Functions #####
+ ==================================================================================
+ */
+
+static int8_t
+HLW811x_Platform_DelayMs(uint8_t Delay)
+{
+  vTaskDelay(Delay / portTICK_PERIOD_MS);
+  return 0;
+}
+
+#if (HLW811X_CONFIG_SUPPORT_SPI)
 
 static int8_t
 HLW811x_Platform_SPI_Init(void)
@@ -283,7 +272,6 @@ HLW811x_Platform_UART_DeInit(void)
   return 0;
 }
 
-#include <stdio.h>
 static int8_t
 HLW811x_Platform_UART_Send(uint8_t *Data, uint8_t Len)
 {
