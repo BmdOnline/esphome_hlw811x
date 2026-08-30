@@ -10,6 +10,8 @@ from esphome.const import (
 
     CONF_ID,
 
+    CONF_NUMBER,
+
     CONF_CLK_PIN,
     CONF_CS_PIN,
     CONF_MISO_PIN,
@@ -34,6 +36,7 @@ from esphome.const import (
     DEVICE_CLASS_VOLTAGE,
 
     STATE_CLASS_MEASUREMENT,
+    STATE_CLASS_MEASUREMENT_ANGLE,
     STATE_CLASS_TOTAL_INCREASING,
 
     ICON_CURRENT_AC,
@@ -86,13 +89,35 @@ SetSpecialMeasurementChannelAction = hlw811x_ns.class_("SetSpecialMeasurementCha
 ResetEnergyAction = hlw811x_ns.class_("ResetEnergyAction", automation.Action)
 
 HLW811x_CurrentChannel = cg.global_ns.enum("HLW811x_CurrentChannel_t")
-
 CHANNEL_LIST = {
     "A": HLW811x_CurrentChannel.HLW811X_CURRENT_CHANNEL_A,
     "B": HLW811x_CurrentChannel.HLW811X_CURRENT_CHANNEL_B,
 }
 
 def _validate(config):
+    # Ensure all required SPI GPIOs are defined
+    spi_pins = (CONF_CLK_PIN, CONF_CS_PIN, CONF_MISO_PIN, CONF_MOSI_PIN)
+    present = [p for p in spi_pins if p in config]
+    missing = [p for p in spi_pins if p not in config]
+
+    if present and missing:
+        raise cv.Invalid(
+            "All four SPI pins must be defined together: missing "
+            + ", ".join(missing)
+        )
+
+    # Detect duplicate GPIOs among SPI pins
+    seen = {}
+    for pin_key in present:
+        pin_number = config[pin_key][CONF_NUMBER]
+        if pin_number in seen:
+            raise cv.Invalid(
+                f"{pin_key} (GPIO{pin_number}) is already used by "
+                f"{seen[pin_number]} - each SPI pin must use a distinct GPIO"
+            )
+        seen[pin_number] = pin_key
+
+    # Check Channel A/B
     if config[CONF_CHANNEL_SEL] not in CHANNEL_LIST:
         raise cv.Invalid(
             f"{config[CONF_CHANNEL_SEL]} can only be {' or '.join(CHANNEL_LIST)}"
@@ -132,16 +157,16 @@ CONFIG_SCHEMA = cv.All(
                 state_class=STATE_CLASS_MEASUREMENT,
             ),
             cv.Optional(CONF_POWER_FACTOR): sensor.sensor_schema(
-                icon=ICON_ANGLE,
                 accuracy_decimals=2,
                 device_class=DEVICE_CLASS_POWER_FACTOR,
                 state_class=STATE_CLASS_MEASUREMENT,
             ),
             cv.Optional(CONF_PHASE_ANGLE): sensor.sensor_schema(
                 unit_of_measurement=UNIT_DEGREES,
+                icon=ICON_ANGLE,
                 accuracy_decimals=2,
-                device_class=DEVICE_CLASS_POWER,
-                state_class=STATE_CLASS_MEASUREMENT,
+                #state_class=STATE_CLASS_MEASUREMENT,
+                state_class=STATE_CLASS_MEASUREMENT_ANGLE,
             ),
             cv.Optional(CONF_APPARENT_POWER): sensor.sensor_schema(
                 unit_of_measurement=UNIT_VOLT_AMPS,
@@ -204,8 +229,7 @@ CONFIG_SCHEMA = cv.All(
         }
     )
     .extend(cv.polling_component_schema("60s")),
-    cv.only_on([PLATFORM_ESP32]),
-    #cv.only_on([PLATFORM_ESP32, PLATFORM_BK72XX]),
+    cv.only_on([PLATFORM_ESP32, PLATFORM_BK72XX]),
     _validate,
 )
 
@@ -313,6 +337,6 @@ HLW811X_ACTION_CHANNEL_LIST_SCHEMA = automation.maybe_simple_id(
 async def hlw811x_channel_action_to_code(config, action_id, template_arg, args):
     var = cg.new_Pvariable(action_id, template_arg)
     await cg.register_parented(var, config[CONF_ID])
-    template_ = await cg.templatable(config[CONF_CHANNEL], args, CHANNEL_LIST)
+    template_ = await cg.templatable(config[CONF_CHANNEL], args, HLW811x_CurrentChannel)
     cg.add(var.set_channel(template_))
     return var
